@@ -3,6 +3,7 @@
 #############################################
 #  Install All DevOps Tools Script
 #  For EC2 Amazon Linux
+#  Updated for Tool-wise Folder Structure
 #############################################
 
 set -e  # Exit on error
@@ -13,54 +14,73 @@ echo "   🚀 Installing All DevOps Tools"
 echo "============================================"
 echo ""
 
-# Get the directory where this script is located
+# Get the base directory (parent of install folder)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASE_DIR="$(dirname "$SCRIPT_DIR")"
 
-# List of install scripts in order
-SCRIPTS=(
-    "install-awscli.sh"
-    "install-docker.sh"
-    "install-kubectl.sh"
-    "install-helm.sh"
-    "install-terraform.sh"
-    "install-jenkins.sh"
-    "install-sonarqube.sh"
-    "install-grafana-prometheus.sh"
+echo "Base Directory: $BASE_DIR"
+echo ""
+
+# Define install scripts with their folder paths
+declare -A INSTALL_SCRIPTS=(
+    ["AWS CLI"]="aws/install-awscli.sh"
+    ["Docker"]="docker/install-docker.sh"
+    ["Kubectl"]="kubernetes/install-kubectl.sh"
+    ["Helm"]="helm/install-helm.sh"
+    ["Terraform"]="terraform/install-terraform.sh"
+    ["Jenkins"]="jenkins/install-jenkins.sh"
+    ["SonarQube"]="sonarqube/install-sonarqube.sh"
+    ["Grafana & Prometheus"]="monitoring/install-grafana-prometheus.sh"
+)
+
+# Order of installation
+INSTALL_ORDER=(
+    "AWS CLI"
+    "Docker"
+    "Kubectl"
+    "Helm"
+    "Terraform"
+    "Jenkins"
+    "SonarQube"
+    "Grafana & Prometheus"
 )
 
 # Counter
-TOTAL=${#SCRIPTS[@]}
+TOTAL=${#INSTALL_ORDER[@]}
 CURRENT=0
 SUCCESS=0
 FAILED=0
 
 # Make all scripts executable
-chmod +x "$SCRIPT_DIR"/*.sh
+find "$BASE_DIR" -name "*.sh" -exec chmod +x {} \;
 
-echo "Found $TOTAL installation scripts to run"
+echo "Found $TOTAL tools to install"
 echo ""
 
-for script in "${SCRIPTS[@]}"; do
+for tool in "${INSTALL_ORDER[@]}"; do
     ((CURRENT++))
+    script_path="${INSTALL_SCRIPTS[$tool]}"
+    full_path="$BASE_DIR/$script_path"
     
-    if [ -f "$SCRIPT_DIR/$script" ]; then
+    if [ -f "$full_path" ]; then
         echo "============================================"
-        echo "[$CURRENT/$TOTAL] Running: $script"
+        echo "[$CURRENT/$TOTAL] Installing: $tool"
+        echo "Script: $script_path"
         echo "============================================"
         echo ""
         
-        if bash "$SCRIPT_DIR/$script"; then
+        if bash "$full_path"; then
             echo ""
-            echo "✅ $script completed successfully"
+            echo "✅ $tool installed successfully"
             ((SUCCESS++))
         else
             echo ""
-            echo "❌ $script failed"
+            echo "❌ $tool installation failed"
             ((FAILED++))
         fi
         echo ""
     else
-        echo "⚠️  Script not found: $script"
+        echo "⚠️  Script not found: $script_path"
         ((FAILED++))
     fi
 done
@@ -70,7 +90,7 @@ echo "============================================"
 echo "   📊 Installation Summary"
 echo "============================================"
 echo ""
-echo "   Total Scripts:  $TOTAL"
+echo "   Total Tools:    $TOTAL"
 echo "   ✅ Successful:  $SUCCESS"
 echo "   ❌ Failed:      $FAILED"
 echo ""
